@@ -68,6 +68,9 @@ void setup() {
 }
 
 void loop() {
+  
+  // Initial state, waits for red button press, never returns here
+  // Stablizes the copter, writes low values to the controler (copter stays on the ground)
   while (x == 0 && y % 2 == 0) {
     digitalWrite(13, HIGH);
     delay(100);
@@ -80,6 +83,9 @@ void loop() {
     analogWrite(right, 75);
   }
 
+  // State 1: Flying state
+  // When the red button is pressed again, this state is entered which polls for sensory data
+  // and adjusts motors accordingly
   if (x % 2 == 0 && y % 2 == 0 && x != 0) {
     digitalWrite(13, HIGH);
 
@@ -87,6 +93,8 @@ void loop() {
 
   }
 
+  // State 2: Stablize state
+  // Calls the stablize method and returns to State 1
   if (x % 2 == 1 && y % 2 == 0) {
     digitalWrite(13, LOW);
     stablize();
@@ -94,6 +102,8 @@ void loop() {
     x++;
   }
 
+  // State 3: Loop state (bonus state)
+  // Writes the values to the controller to make it do a circle on the floor
   if (y % 2 == 1) {
     digitalWrite(13, HIGH);
     delay(250);
@@ -101,25 +111,27 @@ void loop() {
     delay(250);
     ring();
   }
-
 }
 
 // Interrupt service routines
 void increment() {
   x++;
 }
-
 void incrementY() {
   y++;
 }
 
-// Helper Methods
+/////// Helper Methods///////////
+
+// Stablizes by setting the offsets to the current value 
+// (i.e. GyXraw = 120 & GyXoff = 120 -> GyX = 0 & stable)
 void stablize() {
   GyXoff = GyXraw;
   GyYoff = GyYraw;
   GyZoff = GyZraw;
 }
 
+// Writes the values to make the copter move in a circle along the ground, returns to State 1
 void ring() {
   analogWrite(throtle, 0);
   for (int i = 0; i < 153; i++) {
@@ -135,6 +147,7 @@ void ring() {
   y++;
 }
 
+// Main flying method, takes in all the inputs and calculates the values to write out to each motor
 void pilot() {
   flexraw = analogRead(A0);
   Wire.beginTransmission(MPU_addr);
@@ -158,6 +171,7 @@ void pilot() {
   analogWrite(right, rightDrive);
 }
 
+// Writes the calculated values out to the motors, accounts for negatives and outliers
 void lift() {
   // 1.5/5/255 = 75, so no left or right motion
   // Throtle ranges from 255 to 0, 255 is off, 0 is full
